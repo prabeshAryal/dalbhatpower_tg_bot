@@ -1,8 +1,56 @@
 from mytelegrammodules.commandhandlers.commonimports import *
 from downloader.instagram import ig_dlp
 from downloader.insta_story import rapid_ig
+from downloader.cobalt import cobalt
 
 from utils.loader import Loader
+
+class media_ID_to_url(object):
+    def __init__(self, media_id) -> None:
+        self.media_id = media_id
+        self.base64_chars = (
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        )
+
+    def base10_to_base64(self, media_id: int) -> str:
+        """
+        Convert a base10 integer to a base64 encoded string.
+
+        Args:
+        media_id (int): The base10 integer.
+
+        Returns:
+        str: The base64 encoded string.
+        """
+        if media_id == 0:
+            return "A"
+
+        base64_shortcode = ""
+        while media_id > 0:
+            media_id, remainder = divmod(media_id, 64)
+            base64_shortcode = self.base64_chars[remainder] + base64_shortcode
+
+        return base64_shortcode
+
+    def generate_instagram_url(self) -> str:
+        """
+        Generate the Instagram URL from the media ID.
+
+        Args:
+        media_id (int): The base10 media ID.
+
+        Returns:
+        str: The Instagram URL.
+        """
+        # Convert the base10 media ID to base64 shortcode
+        shortcode = self.base10_to_base64(self.media_id)
+
+        # Construct the Instagram URL (using 'p' for posts, adjust if needed)
+        url = f"https://www.instagram.com/p/{shortcode}/"
+
+        return url
+
+
 
 
 def convert_html(string):
@@ -141,6 +189,9 @@ async def instagram_dl(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     print((str(json['first_name']) + ' ' + str(json['last_name'])+' : ' +
           str(json['id']))+" - Sent Insta Link : " + update.message.text)
     shutil.rmtree(os.path.join(os.getcwd(), 'downloads'), ignore_errors=True)
+    instagram = r"(https:\/\/)?((www|m).)?((instagram\.)([\w]+))[\S]*"
+    insta3rdparty = r'https:\/\/www\.picuki\.com\/media\/(\d+)'
+
     try:
         if re.search(r'instagram\.com\/(stories)\/([\w\.\_\-]+)\/([\d]+)(\/)?(\?)?.*',update.message.text):
             # toreply = '*Sorry for Inconvenience*, Stories are not supported for now.'
@@ -148,9 +199,9 @@ async def instagram_dl(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             # print("Story Link, So Sent Sorry message.")
             await rapid_ig_dl(update, context)
             return 'Done'
-
-            
-        only_necesssary_regex = r'(instagram\.com\/(p|reel|reels)\/([\w\-]+))'
+        
+        # only_necesssary_regex = r'(instagram\.com\/(p|reel|reels)\/([\w\-]+))'
+        only_necesssary_regex = r'((instagram\.com\/(p|reel|reels)\/([\w\-]+))|(www\.picuki\.com\/media\/(\d+)))'
         links = re.findall(only_necesssary_regex, update.message.text)
 
         if len(links) == 0:
@@ -161,16 +212,13 @@ async def instagram_dl(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             for link in links:
                 url = "https://"+link[0]
                 # print(url)
-                check, caption, filelist = await ig_dlp(url).download()
-                # check, caption, filelist = ig_dlp(url).download()
-                # print(filelist)
-                time.sleep(5)
-                # print(caption)
-
-                # if os.path.exists(filelist[0]):
-                #     print("File exists")
-                # else:
-                #     print("File doesn't exist")
+                check, caption, filelist = cobalt(url,audio=False).download()
+                if check==False:
+                    print("\n Using Picuki...")
+                    check, caption, filelist = await ig_dlp(url).download()
+                if re.match(insta3rdparty,url):
+                    media_id = re.search(r'https:\/\/www\.picuki\.com\/media\/(\d+)', url).group(1) if re.search(r'https:\/\/www\.picuki\.com\/media\/(\d+)', url) else None
+                    url = media_ID_to_url(int(media_id)).generate_instagram_url()
                 await send_and_all(update, context, check, caption, filelist, url)
                 time.sleep(2)
                 # os.remove(s for s in filelist)

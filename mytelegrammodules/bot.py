@@ -10,6 +10,9 @@ from mytelegrammodules.commandhandlers.gotra_handler import *
 from mytelegrammodules.commandhandlers.ffmpeg_man import *
 from mytelegrammodules.commandhandlers.multisocialdl import multi_social_dl
 from mytelegrammodules.commandhandlers.general_downloader import *
+from mytelegrammodules.commandhandlers.cobalt_handler import cobalt_dlp
+from mytelegrammodules.commandhandlers.nepse import *
+
 
 API_HASH = TG_BOT = os.getenv('TG_BOT_TOKEN')
 
@@ -31,7 +34,10 @@ def main() -> None:
     application.add_handler(CommandHandler("pin", pin))
     application.add_handler(CommandHandler("unpin", unpin))
     application.add_handler(CommandHandler("delete", delete))
-    
+    application.add_handler(CommandHandler("update", boradcast_all))
+    application.add_handler(CommandHandler("broadcast", boradcast_all))
+    application.add_handler(CommandHandler("sendall", boradcast_all))
+
     # application.add_handler(MessageHandler(filters.Regex(r'^\/send ') & ~filters.COMMAND, send, block=False))
 
     #Calendar variants
@@ -62,6 +68,11 @@ def main() -> None:
     application.add_handler(CommandHandler("gotra", my_gotra))
     application.add_handler(CommandHandler("sahagotri", sahagotri))
     application.add_handler(CommandHandler("findgotra", gotra))
+    
+    application.add_handler(CommandHandler("nepse", nepse, block=False))
+    application.add_handler(CommandHandler("stock", nepse,block=False))
+    application.add_handler(CommandHandler("scrip", nepse, block=False))
+
 
     #YTDLP
     application.add_handler(CommandHandler("video", video, block=True))
@@ -89,7 +100,17 @@ def main() -> None:
     application.add_handler(CommandHandler("reddit", multi_social_dl, block=False))
     application.add_handler(CommandHandler("r", multi_social_dl, block=False))
     application.add_handler(CommandHandler("tiktok", short_vid_download, block=False))
-    application.add_handler(CommandHandler("tt", short_vid_download, block=False))
+    application.add_handler(CommandHandler("tt", cobalt_dlp, block=False))
+    application.add_handler(CommandHandler("yt", cobalt_dlp, block=False))
+    application.add_handler(CommandHandler("ytv", cobalt_dlp, block=False))
+    application.add_handler(CommandHandler("cobalt", cobalt_dlp, block=False))
+    application.add_handler(CommandHandler("cvideo", cobalt_dlp, block=False))
+
+    application.add_handler(CommandHandler("ytm", partial(cobalt_dlp, audio=True), block=False))
+    application.add_handler(CommandHandler("yta", partial(cobalt_dlp, audio=True), block=False))
+    application.add_handler(CommandHandler("caudio", partial(cobalt_dlp, audio=True), block=False))
+    application.add_handler(CommandHandler("ytaudio", partial(cobalt_dlp, audio=True), block=False))
+
     
     #Downloader
     application.add_handler(CommandHandler("download", file_dl, block=False))
@@ -111,14 +132,15 @@ def main() -> None:
     # application.add_handler(MessageHandler(filters.Regex('(facebook\.com)\/((photo\/[\S]+)|(groups\/([\w\.]+\/permalink\/[\d]+))|([\w\.]+)\/(posts)\/[\w]+)') & ~filters.COMMAND, facebook_dl, block=False))
 
 # (https?:\/\/(?:(www|m)\.)?instagram\.com\/(p|reel(s)?)\/([^/?#&\s]+))
-    application.add_handler(MessageHandler(filters.Regex(r'(?:https?://)?(?:(?:www|m)\.)?youtube\.com/shorts/[-a-zA-Z0-9]+') & ~filters.COMMAND, short_vid_download, block=True))
+    application.add_handler(MessageHandler(filters.Regex(r'(?:https?://)?(?:(?:www|m)\.)?youtube\.com/shorts/[-a-zA-Z0-9]+') & ~filters.COMMAND, cobalt_dlp, block=False))
     # application.add_handler(MessageHandler(filters.Regex(r'((http(s)?:\/\/)?(?:(www|m)\.)?instagram\.[\w]+([^?#&%\s]+)?)') & ~filters.COMMAND, instagram_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'(https:\/\/)?((www|m).)?((instagram\.)([\w]+))[\S]*') & ~filters.COMMAND, instagram_dl, block=True))    
-    application.add_handler(MessageHandler(filters.Regex(r'((https:\/\/)?(((www.)?tiktok\.com\/@[-a-z\.A-Z0-9_]+\/(video|photo)\/\d+)|(vt\.tiktok\.com\/[-a-zA-Z0-9]+)))') & ~filters.COMMAND, short_vid_download, block=True))
-    application.add_handler(MessageHandler(filters.Regex(r'(?:https?:\/\/)?\w*tera\w*\.\w+[\w./?=&]*') & ~filters.COMMAND, terabox_dl, block=True))
+    application.add_handler(MessageHandler(filters.Regex(r'((https:\/\/)?(((www.)?tiktok\.com\/@[-a-z\.A-Z0-9_]+\/(video|photo)\/\d+)|(vt\.tiktok\.com\/[-a-zA-Z0-9]+)))') & ~filters.COMMAND, multi_social_dl, block=True))
+    application.add_handler(MessageHandler(filters.Regex(r'(?:terabox(?:app|link|share)?\.com|terabox\.app|nephobox\.com|4funbox\.com|mirrobox\.com|momerybox\.com|gibibox\.com|goaibox\.com|terasharelink\.com|freeterabox\.com|1024(?:tera|terabox)\.com|.*(?:tera|box).*)') & ~filters.COMMAND, terabox_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'(https\:\/\/)?([w]+\.)?reddit\.com\/[A-Za-z_/0-9]+') & ~filters.COMMAND, multi_social_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'(https\:\/\/)?([w]+\.)?(facebook|fb)\.(com|watch)\/[A-Za-z_/0-9]+(.php\?(id|v)=[\d]+)?') & ~filters.COMMAND, multi_social_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'https?://(?:(?:www|m(?:obile)?)\.)?(?:(?:twitter|x)\.com|twitter3e4tixl4xyajtrzo62zg5vztmjuricljdp2c5kshju4avyoid\.onion)/') & ~filters.COMMAND, multi_social_dl, block=True))
+    application.add_handler(MessageHandler(filters.Regex(r'https:\/\/www\.picuki\.com\/media\/(\d+)') & ~filters.COMMAND, instagram_dl, block=True))    
 
 
 

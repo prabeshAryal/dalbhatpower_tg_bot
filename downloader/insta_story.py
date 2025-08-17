@@ -103,13 +103,13 @@ class rapid_ig(object):
             else:                
                 print("\nAPI responded failure: " + str(response.status_code))
                 return False, None,[]
-        if downloadType=='Unsupported-Type':
-            print('The format is not supported yet.')
-            return False, None,[]
-        else:
-            with Loader("Download Started","Downloading Completed Successfully"):
-                files=self.here_we_download(download_list)
-                return downloadType, CAPTION, files
+            if downloadType=='Unsupported-Type':
+                print('The format is not supported yet.')
+                return False, None,[]
+            else:
+                with Loader("Download Started","Downloading Completed Successfully"):
+                    files=self.here_we_download(download_list)
+                    return downloadType, CAPTION, files
             
 
 

@@ -85,3 +85,30 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Not enough permission to delete.")
     else:
         await update.message.reply_text("Please reply to a message to delete it.")
+
+
+async def boradcast_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a message when the command /sendall or /boradcast is issued."""
+    tgjson = update.message.from_user
+    # # {'is_bot': False, 'username': 'sads', 'first_name': 'assad', 'last_name': 'asd', 'id': 23423234, 'language_code': 'en'}
+    # print(update.message)
+    print((str(tgjson['first_name']) + ' ' + str(tgjson['last_name']) + ' : ' + str(tgjson['id'])) + " - Issued BroadCasting Command")
+    if(int(tgjson['id'])==996638940):
+        clientjson = json.loads(open("mytelegrammodules/database/db.json", "r").read())
+        chatid = list(clientjson.keys())
+        for chat_id in chatid:
+        # if 996638940:
+            # chat_id=996638940
+            try:
+                if update.message.reply_to_message:
+                    messages_to_send = update.message.reply_to_message
+                    await context.bot.copy_message(chat_id=chat_id, from_chat_id=messages_to_send.chat_id, message_id=messages_to_send.message_id)
+                else:
+                    await update.message.reply_text("For *__Some Security Concerns__* this action has been disabled\. \n>First write a message and reply to it to execute your motive\.", parse_mode="MarkdownV2")
+                    break                        
+            except Exception as e:
+                print(f"Couldn't send to : {chat_id}")
+        await update.message.set_reaction(reaction="❤️‍🔥")
+    else:
+        await update.message.reply_text("You are *__Unauthorized__* to perform this action\! \n>Only Bot Admins are allowed to perform this action\.", parse_mode="MarkdownV2")
+        await update.message.set_reaction(reaction="😭")

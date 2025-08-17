@@ -6,6 +6,7 @@
 import os, re, sys,json,ast,shutil
 import requests
 import time, datetime,nepali_datetime
+import html
 
 # ---------------------------------------------------------------- #
 # **************************************************************** #
@@ -63,3 +64,25 @@ from utils.vid_aud_metadata import *
 # ---------------------------------------------------------------- #
 # **************************************************************** #
 # ---------------------------------------------------------------- #
+
+from typing import TypedDict, List, Literal, cast
+from telegram.ext import JobQueue
+from telegram import (
+    Update,
+    InputMediaVideo,
+    InputMediaPhoto,
+    InputMediaDocument,
+    InputMediaAudio,
+    ReplyKeyboardRemove,
+)
+from telegram.ext import (
+    MessageHandler,
+    filters,
+    CommandHandler,
+    ContextTypes,
+    Application,
+)
+from utils.loader import Loader
+from utils.vid_aud_metadata import *
+from telegram.helpers import effective_message_type
+from functools import partial

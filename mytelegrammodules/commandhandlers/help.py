@@ -21,7 +21,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # {'is_bot': False, 'username': 'sads', 'first_name': 'assad', 'last_name': 'asd', 'id': 23423234, 'language_code': 'en'}
     print((str(json['first_name']) +' ' +str(json['last_name'])+' : ' +str(json['id']))+" - Issued Help Command")
     
-    helptext = ''' ‎ ‎ ‎ ‎ ‎ ‎ ‎***@DalBhatPowerBot*** \n‎ ‎ ‎ ‎ ‎ ‎ ‎__(v1.0 Beta release)__
+    helptext = ''' ‎ ‎ ‎ ‎ ‎ ‎ ‎***@DalBhatPowerBot*** \n‎ ‎ ‎ ‎ ‎ ‎ ‎__(v2.0 with Beta release)__
 ***Few help commands available.***
 
 `/start` - _Check whether bot is working or not._  
@@ -43,20 +43,39 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 `/today` - _Displays today's Nepali Date_  
 `/patro` - _Displays this Nepali Month_
 
-`/video link` - _Downloads and sends videos (1080p) up to 2 GB_  
-`/audio link` - _Downloads and sends audios (mp3) up to 2 GB_
-
-`/ig link` - _Downloads and sends Instagram posts/reels/stories_  
-`/X link` - _Downloads and sends tweets and videos_  
-`/fb link` - _Downloads and sends Facebook videos_  
-`/tera link` - _Downloads and sends Terabox videos_  
-`/r link` - _Downloads and sends Reddit posts_  
-`/tt link` - _Downloads and sends TikTok videos_
+`/rashi` - _Displays All Rashifal._  
+`/rashi something` - _Displays only that horoscope_  
+`/rashi makar` - _Displays only makar horoscope_  
+`/rashi capricorn` - _Displays only makar horoscope_  
+`something` can be name, horoscope or beginning letter in English, Nepali and Roman Versions
 
 `/sahagotri gotra` - _Gives surnames with same gotras_  
 `/mygotra surname` - _Gives your possible gotras_  
 `/gotra surname` - _Gives your possible gotras_  
 `/findgotra surname/gotra` - _Gives possible detailed gotra info_
+
+`/video link` - _Downloads and sends videos (1080p) up to 2 GB_  
+`/audio link` - _Downloads and sends audios (mp3) up to 2 GB_
+*Use `/cobalt` if above fails !*
+`/cobalt link` - _Downloads and sends videos (1080p) up to 2 GB_
+`/caudio link` - _Downloads and sends audios (mp3) up to 2 GB_
+
+`/ig link` - _Downloads and sends Instagram posts/reels/stories_  
+`/X link` - _Downloads and sends tweets and videos_  
+`/fb link` - _Downloads and sends Facebook videos_  
+`/r link` - _Downloads and sends Reddit posts_  
+`/tt link` - _Downloads and sends TikTok videos_
+`/yt link` - _Downloads and sends Youtube videos_
+`/yta link` - _Downloads and sends Youtube audios_
+
+**👶BETA MODE**
+
+`/nepse` - _Gives overall information about NEPSE_
+`/nepse radhi` - _Gives stock price of RADHI scrip_
+
+`/download link` - _Downloads and sends some directly downloadable files_
+`/file`, `dwld`,`dwnld`,`dl`,`direct_dl`, does same too.
+`/terabox` - _Downloads and sends Terabox Content_
 
 **Isn't this help enough ???**
 '''

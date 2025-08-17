@@ -1,7 +1,5 @@
 from mytelegrammodules.commandhandlers.commonimports import *
 
-
-
 async def rasifal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     json = update.message.from_user
     # {'is_bot': False, 'username': 'sads', 'first_name': 'assad', 'last_name': 'asd', 'id': 23423234, 'language_code': 'en'}
@@ -63,7 +61,10 @@ async def patro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     json = update.message.from_user
     # {'is_bot': False, 'username': 'sads', 'first_name': 'assad', 'last_name': 'asd', 'id': 23423234, 'language_code': 'en'}
     print((str(json['first_name']) +' ' +str(json['last_name'])+' : ' +str(json['id']))+" - Issued Patro Command")
-    await update.message.reply_markdown(nepalSpecialTimes.patro(), reply_markup=ReplyKeyboardRemove(selective=True))
+    ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+    the_patro = str(nepalSpecialTimes.patro())
+    cleaned_patro = ansi_escape.sub('___', the_patro)    
+    await update.message.reply_markdown(cleaned_patro, reply_markup=ReplyKeyboardRemove(selective=True))
     print("%50s"%"Done\n")
 
 
