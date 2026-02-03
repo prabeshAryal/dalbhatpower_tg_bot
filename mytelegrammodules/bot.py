@@ -134,7 +134,7 @@ def main() -> None:
 # (https?:\/\/(?:(www|m)\.)?instagram\.com\/(p|reel(s)?)\/([^/?#&\s]+))
     application.add_handler(MessageHandler(filters.Regex(r'(?:https?://)?(?:(?:www|m)\.)?youtube\.com/shorts/[-a-zA-Z0-9]+') & ~filters.COMMAND, cobalt_dlp, block=False))
     # application.add_handler(MessageHandler(filters.Regex(r'((http(s)?:\/\/)?(?:(www|m)\.)?instagram\.[\w]+([^?#&%\s]+)?)') & ~filters.COMMAND, instagram_dl, block=True))
-    application.add_handler(MessageHandler(filters.Regex(r'(https:\/\/)?((www|m).)?((instagram\.)([\w]+))[\S]*') & ~filters.COMMAND, instagram_dl, block=True))    
+    application.add_handler(MessageHandler(filters.Regex(r'(https:\/\/)?((www|m).)?((instagram\.)([\w]+))[\S]*') & ~filters.COMMAND, cobalt_dlp, block=True))    
     application.add_handler(MessageHandler(filters.Regex(r'((https:\/\/)?(((www.)?tiktok\.com\/@[-a-z\.A-Z0-9_]+\/(video|photo)\/\d+)|(vt\.tiktok\.com\/[-a-zA-Z0-9]+)))') & ~filters.COMMAND, multi_social_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'(?:terabox(?:app|link|share)?\.com|terabox\.app|nephobox\.com|4funbox\.com|mirrobox\.com|momerybox\.com|gibibox\.com|goaibox\.com|terasharelink\.com|freeterabox\.com|1024(?:tera|terabox)\.com|.*(?:tera|box).*)') & ~filters.COMMAND, terabox_dl, block=True))
     application.add_handler(MessageHandler(filters.Regex(r'(https\:\/\/)?([w]+\.)?reddit\.com\/[A-Za-z_/0-9]+') & ~filters.COMMAND, multi_social_dl, block=True))

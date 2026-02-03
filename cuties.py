@@ -20,7 +20,7 @@ async def send_and_all(update, context, check, caption, filelist, url):
                 with Loader("Uploading Instagram Video", "Instagram Video Upload Success"):
                     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="upload_video")
                     try:
-                        await update.message.reply_video(video=open(filename, 'rb'),duration=video_duration, write_timeout=1000, connect_timeout=1000, read_timeout=1000, caption=CAPTION, disable_notification=True, width=video_dimensions['width'], height=video_dimensions['height'], thumbnail=open(video_thumbnail_path,'rb') if video_thumbnail_path else None, parse_mode='HTML', supports_streaming=True)
+                        await update.message.reply_video(video=open(filename, 'rb'),duration=video_duration, write_timeout=1000, connect_timeout=1000, read_timeout=1000, caption=CAPTION, disable_notification=True, width=video_dimensions.get("width",0), height=video_dimensions.get("height",0), thumbnail=open(video_thumbnail_path,'rb') if video_thumbnail_path else None, parse_mode='HTML', supports_streaming=True)
                     except Exception as e:
                         await context.bot.send_video(chat_id=update.effective_chat.id,
                             video=open(filename, "rb"),
@@ -30,9 +30,9 @@ async def send_and_all(update, context, check, caption, filelist, url):
                             read_timeout=1000,
                             caption=CAPTION,
                             disable_notification=True,
-                            width=video_dimensions["width"],
-                            height=video_dimensions["height"],
-                            thumbnail=open(video_thumbnail_path, "rb"),
+                            width=video_dimensions.get("width",0),
+                            height=video_dimensions.get("height",0),
+                            thumbnail=open(video_thumbnail_path, "rb") if video_thumbnail_path else None,
                             parse_mode="HTML",
                             supports_streaming=True,
                         )

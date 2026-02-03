@@ -285,16 +285,26 @@ async def cobalt_dlp(update: Update, context: ContextTypes.DEFAULT_TYPE, audio=F
                     caption, reply_markup=ReplyKeyboardRemove(selective=True)
                 )
                 shutil.rmtree(os.path.join(os.getcwd(),'downloads'), ignore_errors=True)
-                await update.message.set_reaction(reaction="😭")
+                try:
+                    await update.message.set_reaction(reaction="😭")
+                except Exception as e:
+                    # Handle message not found or other errors silently
+                    print(f"Failed to set reaction: {e}")
             else:
                 await send_and_all(update,context,check,caption,files,a_url)
                 shutil.rmtree(os.path.join(os.getcwd(),'downloads'), ignore_errors=True)
-                await update.message.set_reaction(reaction="❤️‍🔥")
+                try:
+                    await update.message.set_reaction(reaction="❤️‍🔥")
+                except Exception as e:
+                    print(f"Failed to set reaction: {e}")
     else:
         caption = f"""Not a Link \n\n Unsupported Format or Couldn't download😢 \n{update.message.text}\n\n You can still try to other methods"""
         await update.message.reply_markdown(
                     caption, reply_markup=ReplyKeyboardRemove(selective=True)
                 )
         shutil.rmtree(os.path.join(os.getcwd(),'downloads'),ignore_errors=True)
-        await update.message.set_reaction(reaction="😭")
+        try:
+            await update.message.set_reaction(reaction="😭")
+        except Exception as e:
+            print(f"Failed to set reaction: {e}")
     # You can implement link handling here

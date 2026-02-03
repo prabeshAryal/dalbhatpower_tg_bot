@@ -1,287 +1,304 @@
-import requests, json, os,re
-from utils.loader import Loader
-from urllib.parse import quote
-from typing import Union, Dict, Tuple, Any
-
-import mimetypes
-import random
-import subprocess
-
+import requests
+import json
+import os
+import re
 import hashlib
 import time
 import random
+import mimetypes
+from typing import Union, List, Tuple, Optional, Dict, Any
+from urllib.parse import quote
 
-random_filename_hash = lambda: hashlib.sha256(f"{time.time()}_{random.random()}".encode()).hexdigest()[:16]
+# --- Helper Functions ---
 
-def remove_file_safely(filepath: str):
+def random_filename_hash() -> str:
+    """Generates a short, random filename hash."""
+    return hashlib.sha256(f"{time.time()}_{random.random()}".encode()).hexdigest()[:16]
+
+def remove_file_safely(filepath: Optional[str]):
+    """Removes a file if it exists, ignoring FileNotFoundError."""
+    if not filepath:
+        return
     try:
         os.remove(os.path.realpath(filepath))
     except FileNotFoundError:
         pass
+    except Exception as e:
+        print(f"Error removing file {filepath}: {e}")
 
-class cobalt(object):
-    """An Tiktok Downloader Module You Can't Ignore
+# --- Title Extraction (Refined) ---
 
-    usage:
-    tt_dlp(link) : returns bool, caption, filepath_list
-    Type = Post-Video, Post-Image, Carousel, Public-Story, None"""
+class TiktokTitleExtractor:
+    """A refined TikTok Title extraction module."""
 
-    def __init__(self, link, audio=False) -> None:
-        # self.link = link
-        self.method = "cobalt"
+    @staticmethod
+    def fetch_video_data(url: str) -> Dict[str, Any]:
+        """Fetches video data using the douyin.wtf API with error handling."""
+        api_url = f"https://douyin.wtf/api/hybrid/video_data?url={quote(url)}&minimal=false"
+        try:
+            response = requests.get(api_url, headers={'accept': 'application/json'}, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Could not fetch TikTok data: {e}")
+            return {}
+
+    @staticmethod
+    def extract_title(link: str) -> str:
+        """Extracts and formats the title from the TikTok API response."""
+        data = TiktokTitleExtractor.fetch_video_data(link)
+        
+        author_data = data.get("data", {}).get("author", {})
+        nickname = author_data.get("nickname", "")
+        unique_id = author_data.get("uniqueId", "")
+        
+        post_data = data.get("data", {})
+        title = post_data.get("imagePost", {}).get("title", "")
+        description = post_data.get("desc", "")
+
+        # Determine the main caption content
+        cap = description
+        if title and description:
+            cap = f"{title}\n\n{description}"
+        elif title:
+            cap = title
+        elif not description:
+            cap = "✨"
+        
+        # Format the author line
+        author_line = ""
+        if nickname and unique_id:
+            author_line = f"{nickname} ({unique_id})"
+        elif nickname or unique_id:
+            author_line = nickname or unique_id
+            
+        return f"{author_line}\n\n{cap}".strip() if author_line else cap.strip()
+
+# --- Main Downloader Class ---
+
+class cobalt:
+    """
+    A robust media downloader using the Cobalt API.
+    It cycles through multiple API instances for increased reliability.
+    """
+
+    # List of available Cobalt API endpoints
+    API_ENDPOINTS = [
+        "https://api.cobalt.blackcat.sweeux.org/",
+        "https://cobalt-api.kwiatekmiki.com/",
+        "https://cobalt-api.meowing.de/"
+    ]
+
+    def __init__(self, link: str, audio: bool = False) -> None:
+        """
+        Initializes the downloader with the target link and options.
+
+        :param str link: The URL of the media to download.
+        :param bool audio: If True, downloads only the audio (sets downloadMode to 'audio').
+        """
         self.link = link
         self.audio = audio
         self.headers = {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
+        # Construct the request body based on whether audio only is requested
+        if self.audio:
+            self.body = {
+                "url": self.link,
+                "downloadMode": "audio",
+                "audioFormat": "mp3",
+                "audioBitrate": "128",
+                "filenameStyle": "pretty",
+                "tiktokFullAudio": True,
             }
-        self.body = (
-        {
-            "url": link,
-            "videoQuality": "max",
-            "filenameStyle": "pretty",
-            "youtubeVideoCodec":"h264",
-            "tiktokH265":True
-        }
-        if self.audio == False
-        else {
-            "url": link,
-            "downloadMode": 'audio',
-            "audioFormat": "mp3",
-            "tiktokFullAudio": True,
-            "filenameStyle": "pretty",
-        }
-    )
-        # self.api = "https://kityune.imput.net/api/json"
-        # self.api= "https://olly.imput.net/api/json"
-        # self.api= "http://146.190.137.147:9000/"
-        # self.api ="https://c.blahaj.ca/"
-        # https://api.cobalt.tools/api/serverInfo
-        # api_list = ["https://cobalt-7.kwiatekmiki.com/api/serverInfo","https://cobalt-api.kwiatekmiki.com/", "https://cobalt.api.timelessnesses.me/", "https://cobalt-us.kwiatekmiki.com/", "https://dl.khyernet.xyz/", "https://cobalt-backend.canine.tools/", "https://downloadapi.stuff.solutions/api/serverInfo", "https://api.co.rooot.gay/"]
-        self.api = "https://cobalt-api.kwiatekmiki.com/"
-
-    def get_page_title(self, url):
-        if re.match(r"^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$",url):
-            import requests
-            get_youtube_title = lambda url: (lambda yt_api_key=os.getenv('YT_APIV2'), video_id=re.search(r"(?:v=|shorts/|.be/)([^&?/]+)", url).group(1): requests.get(f"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={yt_api_key}").json()['items'][0]['snippet']['title'] if video_id else None)() if re.search(r"(?:v=|shorts/|.be/)([^&?/]+)", url) else None
-            title = get_youtube_title(url)
-        elif re.match(r"((https:\/\/)?(((www.)?tiktok\.com\/@[-a-z\.A-Z0-9_]+\/(video|photo)\/\d+)|(vt\.tiktok\.com\/[-a-zA-Z0-9]+)))",url):
-            title = Tiktok_Title_Extractor.title_extractor(url)
         else:
-            import requests
-            title = (
-                lambda r: (
-                    r.text.split("<title>")[1].split("</title>")[0]
-                    if "<title>" in r.text
-                    else None
-                )
-            )(requests.get(url))
-        return title
+            self.body = {
+                "url": self.link,
+                "videoQuality": "max",
+                "filenameStyle": "pretty",
+                "youtubeVideoCodec": "h264",
+                "allowH265": True
+            }
 
-    def get_valid_filename(self, url: str) -> Union[None, str]:
+    def _get_page_title(self) -> str:
         """
-        Fetches the filename provided by the server in the Content-Disposition header.
+        Extracts the page title from the URL. Supports TikTok, YouTube, and generic pages.
+        Returns the original link as a fallback.
+        """
+        # TikTok
+        if re.match(r"((https?:\/\/)?(((www.)?tiktok\.com\/@[-a-z\.A-Z0-9_]+\/(video|photo)\/\d+)|(vt\.tiktok\.com\/[-a-zA-Z0-9]+)))", self.link):
+            return TiktokTitleExtractor.extract_title(self.link)
         
-        :param str url: The URL to fetch the filename from.
-        :return str: The filename provided by the server or None if not found.
-        """
+        # YouTube (Note: API key method removed for simplicity and to avoid external dependencies)
+        if re.match(r"^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$", self.link):
+            try:
+                # A simpler method to get title without API key
+                response = requests.get(f"https://noembed.com/embed?url={self.link}")
+                response.raise_for_status()
+                data = response.json()
+                if data and "title" in data:
+                    return data["title"]
+            except (requests.RequestException, json.JSONDecodeError) as e:
+                print(f"Could not fetch YouTube title via oEmbed: {e}")
+
+        # Generic Fallback
         try:
-            # Send a HEAD request to the URL to get the headers
-            response = requests.head(url, allow_redirects=True)
-            
-            # Check if 'Content-Disposition' header is present
-            if 'Content-Disposition' in response.headers:
-                # Extract the filename from the 'Content-Disposition' header
-                filename_match = re.search(r'filename="?(?P<filename>[^"]+)"?', response.headers['Content-Disposition'])
-                if filename_match:
-                    return filename_match.group("filename")
-            else:
-                return random_filename_hash()
-                
-                return mini_hash()
-            # If no filename found in headers, return None
-            print(f"Cannot find specific filename from URL headers: {url}, skipped!")
-            return None
-        
+            response = requests.get(self.link, timeout=10)
+            response.raise_for_status()
+            if title_match := re.search(r"<title>(.*?)<\/title>", response.text, re.IGNORECASE):
+                return title_match.group(1).strip()
         except requests.RequestException as e:
-            print(f"Error fetching headers for {url}: {e}")
-            return None
-    
+            print(f"Could not fetch generic page title: {e}")
+            
+        return self.link # Fallback to the link itself
+
+    def _download_file(self, url: str, directory: str) -> Optional[str]:
+        """
+        Downloads a single file from a URL using requests.
+        This replaces the original platform-dependent `lynx` and `file` implementation.
+
+        :param str url: The URL of the file to download.
+        :param str directory: The directory to save the file in.
+        :return: The full path to the downloaded file, or None if download failed.
+        """
+        os.makedirs(directory, exist_ok=True)
         
-    def download_media(self, url, directory=os.path.join(os.getcwd(), "downloads")):
         try:
-            # # Extract a base filename from the URL
-            # raw_filename = re.split(r"[\|\+\/]+", urlparse(url).path)[-2]
-            # base_filename, _ = os.path.splitext(
-            #     raw_filename
-            # )  # Ignore the extension in URL
-            base_filename = self.get_valid_filename(url)
-            # Ensure the directory exists
-            os.makedirs(directory, exist_ok=True)
+            with requests.get(url, stream=True, timeout=20) as r:
+                r.raise_for_status()
+                
+                # Determine filename
+                filename = random_filename_hash()
+                if cd := r.headers.get('content-disposition'):
+                    if filename_match := re.search(r'filename="?([^"]+)"?', cd):
+                        filename = os.path.basename(filename_match.group(1))
 
-            # Temporary file path to save the downloaded content
-            temp_file_path = os.path.join(directory, base_filename)
-
-            # Use lynx to download the content
-            result = subprocess.run(["lynx", "-source", url], capture_output=True)
-            result.check_returncode()
-
-            # Save the content to a temporary file
-            with open(temp_file_path, "wb") as file:
-                file.write(result.stdout)
-
-            # Detect the file type using the `file` command
-            mime_type = subprocess.run(
-                ["file", "--mime-type", "-b", temp_file_path],
-                capture_output=True,
-                text=True,
-            ).stdout.strip()
-            extension = mimetypes.guess_extension(mime_type)
-
-            # If an extension is detected, rename the file with the correct extension
-            if extension:
-                final_file_path = f"{temp_file_path}{extension}"
-                os.rename(temp_file_path, final_file_path)
-            else:
-                # Default to .bin if unknown
-                if not temp_file_path.endswith(("mp4","jpeg","jpg","mp3","mkv", "avc")):
-                    final_file_path = f"{temp_file_path}.mp4"
-                    os.rename(temp_file_path, final_file_path)
+                # Determine extension
+                base_filename, ext = os.path.splitext(filename)
+                if not ext:
+                    content_type = r.headers.get('content-type')
+                    extension = mimetypes.guess_extension(content_type) if content_type else '.mp4'
+                    final_filepath = os.path.join(directory, f"{base_filename}{extension or '.bin'}")
                 else:
-                    final_file_path=temp_file_path
-            
-            if os.path.realpath(final_file_path):
-                return final_file_path
-            else:
-                print(
-                    f"Video wasn't downloaded for some reasons : \n\t{url}\n\tFilepath:{final_file_path} "
+                    final_filepath = os.path.join(directory, filename)
+
+                # Download the file
+                with open(final_filepath, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                
+                print(f"Successfully downloaded: {final_filepath}")
+                return final_filepath
+
+        except requests.RequestException as e:
+            print(f"Failed to download media from {url}. Error: {e}")
+            return None
+
+
+    def download(self) -> Tuple[Union[bool, str], Optional[str], List[str]]:
+        """
+        Attempts to download media by posting to a randomly selected cobalt API endpoint, retrying up to 3 times.
+
+        :return: A tuple containing (status, caption, list_of_filepaths).
+                 - status: 'redirect', 'picker', 'stream' on success, False on failure.
+                 - caption: The extracted media caption/title.
+                 - list_of_filepaths: A list of paths to the downloaded files.
+        """
+        import logging
+        import random
+        attempts = 0
+        max_attempts = 3
+        api_response = None
+        last_error = None
+        while attempts < max_attempts:
+            api_endpoint = random.choice(self.API_ENDPOINTS)
+            try:
+                logging.info(f"Attempting to use API: {api_endpoint}")
+                response = requests.post(
+                    url=api_endpoint,
+                    headers=self.headers,
+                    data=json.dumps(self.body),
+                    timeout=15
                 )
-                remove_file_safely(final_file_path)
-                return False
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Error running command: {e}")
-        except FileNotFoundError as e:
-            print(f"Executable not found: {e}")
-        except OSError as e:
-            print(f"OS error: {e}")
-
-    def here_we_download(self, all_links):
-        filepath = []
-        for media_link in all_links:
-            file = self.download_media(media_link)
-            if file:
-                filepath.append(file)
-            else:
-                remove_file_safely(file)
-        return filepath
-
-    def download(self):
-        try:
-            # with Loader("Requesting API....", "API Response Received✅"):
-            response = requests.post(
-                self.api, headers=self.headers, data=json.dumps(self.body)
-            )
-            # print(response)
-            # print(response.text)
-
-            if response.status_code == 200:
-                mydict = response.json()
-                typeofcontent = mydict["status"]
-
-
-                if typeofcontent == "redirect" or typeofcontent == "stream":
-                    download_list = [mydict["url"]]
-                elif typeofcontent == "picker":
-                    download_list = [obj["url"] for obj in mydict["picker"]]
+                if response.status_code == 200:
+                    api_response = response.json()
+                    logging.info(f"API success from {api_endpoint}")
+                    break
                 else:
-                    download_list = [mydict["url"]]
-                with Loader("Getting Caption", "Caption Extracted ✅"):
-                    CAPTION = self.get_page_title(self.link)
+                    last_error = f"API {api_endpoint} returned status {response.status_code}: {response.text[:100]}"
+                    logging.error(last_error)
+            except requests.RequestException as e:
+                last_error = f"API {api_endpoint} failed: {e}"
+                logging.error(last_error)
+            attempts += 1
 
-                with Loader(
-                    f"Downloading {len(download_list)} Files",
-                    f"Downloaded {len(download_list)} Files ✅",
-                ):
-                    files = self.here_we_download(download_list)
-                    if len(files)>0:
-                        return typeofcontent, CAPTION, files
-            else:
-                print("\nAPI responded failure: " + str(response.status_code))
-                # print(response.text)
-                # print(mydict)
-                return False, None, []
-        except Exception as e:
-            print(e)
-            print("main exception occurred")
+        if not api_response:
+            logging.error(f"Cobalt API endpoint failed after {max_attempts} attempts. Last error: {last_error}")
             return False, None, []
 
+        status = api_response.get("status")
+        if not status or status == "error":
+            logging.error(f"API responded with an error: {api_response.get('error', 'Unknown error')}")
+            return False, None, []
 
-class Tiktok_Title_Extractor:
-    """A Tiktok Title extraction Module"""
+        download_list = []
+        if status in ["redirect", "tunnel"]:
+            download_list.append(api_response["url"])
+        elif status == "picker":
+            download_list = [item["url"] for item in api_response.get("picker", [])]
+            if audio_url := api_response.get("audio"):
+                logging.info("Found separate audio track for slideshow.")
+                download_list.append(audio_url)
+        elif status == "local-processing":
+            download_list = api_response.get("tunnel", [])
 
-    @staticmethod
-    def fetch_video_data(url):
-        """Fetch video data using the provided API."""
-        response = requests.get(
-            f"https://douyin.wtf/api/hybrid/video_data?url={quote(url)}&minimal=false",
-            headers={'accept': 'application/json'}
-        )
-        return response.json()
+        if not download_list:
+            logging.error("API response did not contain any downloadable links.")
+            return False, None, []
 
-    @staticmethod
-    def title_extractor(link):
-        """Extract the title in the specified format."""
-        data = Tiktok_Title_Extractor.fetch_video_data(link)
-        
-        # Extract nickname, uniqueId, and title from the JSON response
-        nickname = data.get("data", {}).get("author", {}).get("nickname", "")
-        uniqueId = data.get("data", {}).get("author", {}).get("uniqueId", "")
-        title = data.get("data", {}).get("imagePost", {}).get("title","")
-        description = data.get("data", {}).get("desc", "")
+        # Get caption
+        logging.info("Extracting caption...")
+        caption = self._get_page_title()
 
-        # Format the title
-        if title and description:
-            cap = f"{title} \n\n {description}"
-        elif title:
-            cap = title
-        elif description:
-            cap = description
-        else:
-            cap = "✨"
-        
-        if nickname and uniqueId:
-            formatted_title = f"{nickname} ({uniqueId}) \n\n {cap}"
-        elif nickname:
-            formatted_title = f"{nickname} \n\n {cap}"
-        elif uniqueId:
-            formatted_title = f"{uniqueId} \n\n {cap}"
-        else:
-            formatted_title = f"{cap}"
-            
-        return formatted_title
+        # Download all media files
+        logging.info(f"Downloading {len(download_list)} file(s)...")
+        filepaths = [self._download_file(url, "downloads") for url in download_list]
+        successful_downloads = [fp for fp in filepaths if fp]
 
-## Test Links
-# link = "https://www.tiktok.com/@ruang.rakyat/video/7311900622423362848?is_from_webapp=1&sender_device=pc"  #
-# link = "https://vt.tiktok.com/ZSNs3eATL/"  # story
-# link = "https://vt.tiktok.com/ZSasdsadNs3eGAp/"  # - pictures
-# link = "https://www.tiktok.com/@cinnamon_girlll0/video/7305513849812208898"
-# link = "https://www.tiktok.com/@comal_bissta/video/73019192323483034127623"
+        if not successful_downloads:
+            logging.error("All file downloads failed.")
+            return False, caption, []
+
+        return status, caption, successful_downloads
 
 
-# Working Links
-# link = "https://vt.tiktok.com/ZSNGNPF8s/"
-# link = "https://vt.tiktok.com/ZSNGN8hvB/"
-# link = "https://vt.tiktok.com/ZSNGNyJqr/"
-# link = "https://vt.tiktok.com/ZSNGNBaCu/"
-# # link = "https://vt.tiktok.com/ZSNGNLKAB/"
-# # test = Tiktok_Title_Extractor(link)
-# # testreturn = test.title_extractor()
-# # print(testreturn)
-# # link = "https://www.tiktok.com/@_sicparvismagna_/video/7315130414534888736"
-# insatnces = tt_dlp(link)
-# check, caption, filelist = insatnces.download()
-# print(check)
-# print(caption)
-# print(filelist)
+if __name__ == '__main__':
+    # --- Example Usage ---
+    # This block will only run when the script is executed directly.
+    
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[logging.StreamHandler()]
+    )
+
+    test_links = [
+"https://www.instagram.com/p/DOImrGikw1g/?igsh=YnRldnV5Ym94eWFx"
+    ]
+
+    selected_link = random.choice(test_links)
+    logging.info(f"Testing with link: {selected_link}")
+
+    downloader = CobaltDownloader(selected_link)
+    download_status, media_caption, file_list = downloader.download()
+
+    logging.info("DOWNLOAD PROCESS COMPLETE")
+    logging.info(f"Status: {download_status}")
+    logging.info(f"Caption: {media_caption}")
+    logging.info(f"Files Downloaded ({len(file_list)}):")
+    for f in file_list:
+        logging.info(f"- {f}")
+

@@ -67,8 +67,8 @@ class TelethonModuleByME():
                 attributes = [
                     DocumentAttributeVideo(
                         duration=video_duration,
-                        w=video_dimensions['width'],
-                        h=video_dimensions['height'],
+                        w=video_dimensions.get("width",1080),
+                        h=video_dimensions.get("height",1920),
                         supports_streaming=True
                     )
                 ]
@@ -78,7 +78,7 @@ class TelethonModuleByME():
                     f"🚀 Uploading Video: {title}\n"
                     f"Size: {TelethonModuleByME.get_readable_file_size(video_file_path)}\n"
                     f"Duration: {TelethonModuleByME.format_time(video_duration)}\n"
-                    f"Dimensions: {video_dimensions['width']}x{video_dimensions['height']}"
+                    f"Dimensions: {video_dimensions.get('width', 1080)}x{video_dimensions.get('height', 1920)}"
                 )
                 
                 # Send the initial message and embed metadata with the video

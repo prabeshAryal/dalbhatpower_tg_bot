@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+myenv/
+
+# Telegram sessions
+*.session
+*.session-journal
+
+# Secrets/Local config
+secrets.json
+config.local.json
+mytelegrammodules/database/db.json
